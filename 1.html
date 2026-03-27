@@ -38,6 +38,7 @@
       border-radius: 10px;
       font-size: 16px;
       box-sizing: border-box;
+      background: #fff;
     }
     button {
       width: 100%;
@@ -50,9 +51,6 @@
       color: white;
       font-size: 16px;
       cursor: pointer;
-    }
-    button.secondary {
-      background: #888;
     }
     #status {
       margin-top: 12px;
@@ -73,7 +71,7 @@
       <p>請輸入資料完成綁定</p>
       <input id="name" type="text" placeholder="姓名">
       <input id="birthday" type="date">
-      <div class="hint">例如：1990-01-01</div>
+      <div class="hint">請選擇您的出生日期</div>
       <button onclick="bind()">確認綁定</button>
     </div>
 
@@ -141,7 +139,7 @@
     async function bind() {
       try {
         const name = document.getElementById("name").value.trim();
-        const birthday = document.getElementById("birthday").value.trim();
+        const birthday = document.getElementById("birthday").value;
 
         if (!name || !birthday) {
           alert("請完整輸入姓名與生日");
