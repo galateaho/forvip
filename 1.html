@@ -7,16 +7,27 @@
 </head>
 <body style="text-align:center; font-family:sans-serif; padding:30px;">
 
-  <h2>📄 我的保單</h2>
-  <p id="status">載入中...</p>
+<h2>📄 我的保單</h2>
 
-  <button id="pdfBtn" style="display:none; padding:10px 20px; font-size:16px;">
-    查看保單PDF
-  </button>
+<div id="bindArea" style="display:none;">
+  <p>請輸入資料完成綁定</p>
+  <input id="name" placeholder="姓名"><br><br>
+  <input id="birthday" placeholder="生日 (YYYY-MM-DD)"><br><br>
+  <button onclick="bind()">確認綁定</button>
+</div>
+
+<div id="resultArea" style="display:none;">
+  <p id="welcome"></p>
+  <button id="pdfBtn">查看保單PDF</button>
+</div>
+
+<p id="status">載入中...</p>
 
 <script>
-const LIFF_ID = "2009625478-RbIHErG9";
+const LIFF_ID = "2009625468-l1pRV9me";
 const API_URL = "https://script.google.com/macros/s/AKfycbzmIlk-YYCM8iRFzxatuAo3a2XRo9WHTkDWvk0AZbi9rkmtKdrn_-CyiBC97e01alTkuw/exec";
+
+let userId = "";
 
 async function main() {
   await liff.init({ liffId: LIFF_ID });
@@ -27,27 +38,51 @@ async function main() {
   }
 
   const profile = await liff.getProfile();
-  const userId = profile.userId;
+  userId = profile.userId;
 
-  document.getElementById("status").innerText = "辨識身份中...";
+  checkUser();
+}
 
+async function checkUser() {
   const res = await fetch(API_URL + "?userId=" + userId);
   const data = await res.json();
 
   if (data.status === "FOUND") {
-    document.getElementById("status").innerText = 
-      "您好，" + data.name;
+    document.getElementById("status").style.display = "none";
+    document.getElementById("resultArea").style.display = "block";
 
-    const btn = document.getElementById("pdfBtn");
-    btn.style.display = "inline-block";
+    document.getElementById("welcome").innerText = "您好，" + data.name;
 
-    btn.onclick = function() {
+    document.getElementById("pdfBtn").onclick = function() {
       window.location.href = data.pdf;
     };
 
   } else {
-    document.getElementById("status").innerText =
-      "尚未綁定資料，請聯絡您的業務員";
+    document.getElementById("status").style.display = "none";
+    document.getElementById("bindArea").style.display = "block";
+  }
+}
+
+async function bind() {
+  const name = document.getElementById("name").value;
+  const birthday = document.getElementById("birthday").value;
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      userId: userId,
+      name: name,
+      birthday: birthday
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.status === "BIND_SUCCESS") {
+    alert("綁定成功！");
+    location.reload();
+  } else {
+    alert("資料錯誤，請確認姓名與生日");
   }
 }
 
