@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>我的保單</title>
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+
   <style>
     body {
       margin: 0;
@@ -19,161 +20,156 @@
       margin: 0 auto;
       background: #fff;
       border-radius: 16px;
-      padding: 24px 20px;
+      padding: 24px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-    h2 {
-      margin-top: 0;
-      margin-bottom: 20px;
-    }
-    p {
-      line-height: 1.6;
     }
     input {
       width: 100%;
-      max-width: 300px;
       padding: 12px;
       margin: 8px 0;
-      border: 1px solid #ccc;
       border-radius: 10px;
+      border: 1px solid #ccc;
       font-size: 16px;
-      box-sizing: border-box;
-      background: #fff;
     }
     button {
       width: 100%;
-      max-width: 300px;
       padding: 12px;
       margin-top: 12px;
-      border: none;
       border-radius: 10px;
+      border: none;
       background: #06c755;
-      color: white;
+      color: #fff;
       font-size: 16px;
-      cursor: pointer;
     }
     #status {
       margin-top: 12px;
       color: #666;
     }
-    .hint {
-      font-size: 14px;
-      color: #888;
-      margin-top: 8px;
-    }
   </style>
 </head>
+
 <body>
   <div class="card">
     <h2>📄 我的保單</h2>
 
     <div id="bindArea" style="display:none;">
       <p>請輸入資料完成綁定</p>
-      <input id="name" type="text" placeholder="姓名">
+      <input id="name" placeholder="姓名">
       <input id="birthday" type="date">
-      <div class="hint">請選擇您的出生日期</div>
       <button onclick="bind()">確認綁定</button>
     </div>
 
     <div id="resultArea" style="display:none;">
       <p id="welcome"></p>
-      <button id="pdfBtn">查看保單 PDF</button>
+      <button id="pdfBtn">查看保單PDF</button>
     </div>
 
     <p id="status">載入中...</p>
   </div>
 
-  <script>
-    const LIFF_ID = "2009625468-l1pRV9me";
-    const API_URL = "https://script.google.com/macros/s/AKfycbwTMTb7_n2g9G-2x1aWj8d7JlUKd5T5DI0xk_HqtGhyjtOqOnEqyq81M_JMp7C8sxH0qg/exec";
+<script>
+const LIFF_ID = "2009625468-l1pRV9me";
+const API_URL = "https://script.google.com/macros/s/AKfycbwTMTb7_n2g9G-2x1aWj8d7JlUKd5T5DI0xk_HqtGhyjtOqOnEqyq81M_JMp7C8sxH0qg/exec";
 
-    let userId = "";
+let userId = "";
 
-    async function main() {
-      try {
-        await liff.init({ liffId: LIFF_ID });
+async function main() {
+  try {
+    await liff.init({ liffId: LIFF_ID });
 
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-
-        const profile = await liff.getProfile();
-        userId = profile.userId;
-
-        await checkUser();
-      } catch (err) {
-        document.getElementById("status").innerText = "頁面載入失敗，請稍後再試";
-        console.error("main error:", err);
-      }
+    if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
     }
 
-    async function checkUser() {
-      try {
-        const url = API_URL + "?userId=" + encodeURIComponent(userId);
-        const res = await fetch(url);
-        const data = await res.json();
+    const profile = await liff.getProfile();
+    userId = profile.userId;
 
-        if (data.status === "FOUND") {
-          document.getElementById("status").style.display = "none";
-          document.getElementById("resultArea").style.display = "block";
-          document.getElementById("welcome").innerText = "您好，" + data.name;
+    console.log("userId:", userId);
 
-          document.getElementById("pdfBtn").onclick = function () {
-            if (data.pdf) {
-              window.location.href = data.pdf;
-            } else {
-              alert("尚未設定保單 PDF 連結");
-            }
-          };
-        } else {
-          document.getElementById("status").style.display = "none";
-          document.getElementById("bindArea").style.display = "block";
-        }
-      } catch (err) {
-        document.getElementById("status").innerText = "資料讀取失敗，請稍後再試";
-        console.error("checkUser error:", err);
-      }
+    checkUser();
+
+  } catch (err) {
+    alert("LIFF 初始化失敗：" + err.message);
+    console.error(err);
+  }
+}
+
+async function checkUser() {
+  try {
+    const res = await fetch(API_URL + "?userId=" + encodeURIComponent(userId));
+    const data = await res.json();
+
+    console.log("checkUser:", data);
+
+    if (data.status === "FOUND") {
+      document.getElementById("status").style.display = "none";
+      document.getElementById("resultArea").style.display = "block";
+
+      document.getElementById("welcome").innerText = "您好，" + data.name;
+
+      document.getElementById("pdfBtn").onclick = function () {
+        window.location.href = data.pdf;
+      };
+
+    } else {
+      document.getElementById("status").style.display = "none";
+      document.getElementById("bindArea").style.display = "block";
     }
 
-    async function bind() {
-      try {
-        const name = document.getElementById("name").value.trim();
-        const birthday = document.getElementById("birthday").value;
+  } catch (err) {
+    alert("讀取資料失敗：" + err.message);
+    console.error(err);
+  }
+}
 
-        if (!name || !birthday) {
-          alert("請完整輸入姓名與生日");
-          return;
-        }
+async function bind() {
+  try {
+    const name = document.getElementById("name").value.trim();
+    const birthday = document.getElementById("birthday").value;
 
-        const url = API_URL
-          + "?action=bind"
-          + "&userId=" + encodeURIComponent(userId)
-          + "&name=" + encodeURIComponent(name)
-          + "&birthday=" + encodeURIComponent(birthday);
-
-        const res = await fetch(url);
-        const data = await res.json();
-
-        if (data.status === "BIND_SUCCESS") {
-          alert("綁定成功！");
-          location.reload();
-        } else if (data.status === "WRITE_FAIL") {
-          alert("比對成功，但寫入失敗");
-          console.error("WRITE_FAIL:", data);
-        } else if (data.status === "ERROR") {
-          alert("系統錯誤，請稍後再試");
-          console.error("API ERROR:", data);
-        } else {
-          alert("資料錯誤，請確認姓名與生日");
-        }
-      } catch (err) {
-        alert("綁定失敗，請稍後再試");
-        console.error("bind error:", err);
-      }
+    if (!name || !birthday) {
+      alert("請輸入姓名與生日");
+      return;
     }
 
-    main();
-  </script>
+    console.log("送出資料:", name, birthday);
+
+    const url = API_URL
+      + "?action=bind"
+      + "&userId=" + encodeURIComponent(userId)
+      + "&name=" + encodeURIComponent(name)
+      + "&birthday=" + encodeURIComponent(birthday);
+
+    console.log("API URL:", url);
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    console.log("API回傳:", data);
+
+    if (data.status === "BIND_SUCCESS") {
+      alert("綁定成功！");
+      location.reload();
+
+    } else if (data.status === "WRITE_FAIL") {
+      alert("寫入失敗：" + JSON.stringify(data.debug));
+
+    } else if (data.status === "BIND_FAIL") {
+      alert("比對失敗：" + JSON.stringify(data.debug));
+
+    } else {
+      alert("未知錯誤：" + JSON.stringify(data));
+    }
+
+  } catch (err) {
+    alert("bind錯誤：" + err.message);
+    console.error(err);
+  }
+}
+
+main();
+</script>
+
 </body>
 </html>
