@@ -13,12 +13,13 @@
   <p>請輸入資料完成綁定</p>
   <input id="name" placeholder="姓名"><br><br>
   <input id="birthday" placeholder="生日 (YYYY-MM-DD)"><br><br>
-  <button onclick="bind()">確認綁定</button>
+  <button onclick="alert('有按到按鈕'); bind()">確認綁定</button>
 </div>
 
 <div id="resultArea" style="display:none;">
   <p id="welcome"></p>
-  <button id="pdfBtn">查看保單PDF</button>
+  <button id="pdfBtn">查看保單PDF</button><br><br>
+  <button onclick="unbind()">解除綁定</button>
 </div>
 
 <p id="status">載入中...</p>
@@ -30,66 +31,100 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwTMTb7_n2g9G-2x1aWj8d7
 let userId = "";
 
 async function main() {
-  await liff.init({ liffId: LIFF_ID });
+  try {
+    alert("main開始");
 
-  if (!liff.isLoggedIn()) {
-    liff.login();
-    return;
+    await liff.init({ liffId: LIFF_ID });
+    alert("LIFF初始化完成");
+
+    if (!liff.isLoggedIn()) {
+      alert("尚未登入，準備登入");
+      liff.login();
+      return;
+    }
+
+    const profile = await liff.getProfile();
+    userId = profile.userId;
+    alert("取得 userId 成功");
+
+    checkUser();
+  } catch (err) {
+    alert("main錯誤：" + err.message);
+    console.error(err);
   }
-
-  const profile = await liff.getProfile();
-  userId = profile.userId;
-
-  checkUser();
 }
 
 async function checkUser() {
-  const res = await fetch(API_URL + "?userId=" + encodeURIComponent(userId));
-  const data = await res.json();
+  try {
+    alert("開始檢查綁定狀態");
 
-  if (data.status === "FOUND") {
-    document.getElementById("status").style.display = "none";
-    document.getElementById("resultArea").style.display = "block";
-    document.getElementById("welcome").innerText = "您好，" + data.name;
+    const res = await fetch(API_URL + "?userId=" + encodeURIComponent(userId));
+    const data = await res.json();
 
-    document.getElementById("pdfBtn").onclick = function() {
-      window.location.href = data.pdf;
-    };
-  } else {
-    document.getElementById("status").style.display = "none";
-    document.getElementById("bindArea").style.display = "block";
+    alert("checkUser回傳：" + JSON.stringify(data));
+
+    if (data.status === "FOUND") {
+      document.getElementById("status").style.display = "none";
+      document.getElementById("resultArea").style.display = "block";
+      document.getElementById("welcome").innerText = "您好，" + data.name;
+
+      document.getElementById("pdfBtn").onclick = function() {
+        window.location.href = data.pdf;
+      };
+    } else {
+      document.getElementById("status").style.display = "none";
+      document.getElementById("bindArea").style.display = "block";
+    }
+  } catch (err) {
+    alert("checkUser錯誤：" + err.message);
+    console.error(err);
   }
 }
 
 async function bind() {
-  const name = document.getElementById("name").value.trim();
-  const birthday = document.getElementById("birthday").value.trim();
+  try {
+    alert("bind開始執行");
 
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      userId: userId,
-      name: name,
-      birthday: birthday
-    })
-  });
+    const name = document.getElementById("name").value.trim();
+    const birthday = document.getElementById("birthday").value.trim();
 
-  const data = await res.json();
-  console.log(data);
+    alert("準備送出：姓名=" + name + "，生日=" + birthday);
 
-  if (data.status === "BIND_SUCCESS") {
-    alert("綁定成功！");
-    location.reload();
-  } else if (data.status === "WRITE_FAIL") {
-    alert("比對成功，但寫入失敗：" + JSON.stringify(data.debug));
-  } else if (data.status === "ERROR") {
-    alert("程式錯誤：" + data.message);
-  } else {
-    alert("資料錯誤，請確認姓名與生日");
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        userId: userId,
+        name: name,
+        birthday: birthday
+      })
+    });
+
+    alert("POST已送出，等待回應");
+
+    const data = await res.json();
+    alert("API回傳：" + JSON.stringify(data));
+
+    if (data.status === "BIND_SUCCESS") {
+      alert("綁定成功！");
+      location.reload();
+    } else if (data.status === "WRITE_FAIL") {
+      alert("比對成功，但寫入失敗：" + JSON.stringify(data.debug));
+    } else if (data.status === "ERROR") {
+      alert("程式錯誤：" + data.message);
+    } else {
+      alert("資料錯誤，請確認姓名與生日");
+    }
+  } catch (err) {
+    alert("bind錯誤：" + err.message);
+    console.error(err);
   }
+}
+
+async function unbind() {
+  alert("目前若要解綁，請先到 Google Sheet 手動清空 LINE_userId 欄位");
 }
 
 main();
