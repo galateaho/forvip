@@ -44,19 +44,17 @@ async function main() {
 }
 
 async function checkUser() {
-  const res = await fetch(API_URL + "?userId=" + userId);
+  const res = await fetch(API_URL + "?userId=" + encodeURIComponent(userId));
   const data = await res.json();
 
   if (data.status === "FOUND") {
     document.getElementById("status").style.display = "none";
     document.getElementById("resultArea").style.display = "block";
-
     document.getElementById("welcome").innerText = "您好，" + data.name;
 
     document.getElementById("pdfBtn").onclick = function() {
       window.location.href = data.pdf;
     };
-
   } else {
     document.getElementById("status").style.display = "none";
     document.getElementById("bindArea").style.display = "block";
@@ -64,11 +62,14 @@ async function checkUser() {
 }
 
 async function bind() {
-  const name = document.getElementById("name").value;
-  const birthday = document.getElementById("birthday").value;
+  const name = document.getElementById("name").value.trim();
+  const birthday = document.getElementById("birthday").value.trim();
 
   const res = await fetch(API_URL, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
       userId: userId,
       name: name,
@@ -77,10 +78,15 @@ async function bind() {
   });
 
   const data = await res.json();
+  console.log(data);
 
   if (data.status === "BIND_SUCCESS") {
     alert("綁定成功！");
     location.reload();
+  } else if (data.status === "WRITE_FAIL") {
+    alert("比對成功，但寫入失敗：" + JSON.stringify(data.debug));
+  } else if (data.status === "ERROR") {
+    alert("程式錯誤：" + data.message);
   } else {
     alert("資料錯誤，請確認姓名與生日");
   }
