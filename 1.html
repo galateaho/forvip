@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>我的保單</title>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+</head>
+<body style="text-align:center; font-family:sans-serif; padding:30px;">
+
+  <h2>📄 我的保單</h2>
+  <p id="status">載入中...</p>
+
+  <button id="pdfBtn" style="display:none; padding:10px 20px; font-size:16px;">
+    查看保單PDF
+  </button>
+
+<script>
+const LIFF_ID = "2009625478-RbIHErG9";
+const API_URL = "https://script.google.com/macros/s/AKfycbzmIlk-YYCM8iRFzxatuAo3a2XRo9WHTkDWvk0AZbi9rkmtKdrn_-CyiBC97e01alTkuw/exec";
+
+async function main() {
+  await liff.init({ liffId: LIFF_ID });
+
+  if (!liff.isLoggedIn()) {
+    liff.login();
+    return;
+  }
+
+  const profile = await liff.getProfile();
+  const userId = profile.userId;
+
+  document.getElementById("status").innerText = "辨識身份中...";
+
+  const res = await fetch(API_URL + "?userId=" + userId);
+  const data = await res.json();
+
+  if (data.status === "FOUND") {
+    document.getElementById("status").innerText = 
+      "您好，" + data.name;
+
+    const btn = document.getElementById("pdfBtn");
+    btn.style.display = "inline-block";
+
+    btn.onclick = function() {
+      window.location.href = data.pdf;
+    };
+
+  } else {
+    document.getElementById("status").innerText =
+      "尚未綁定資料，請聯絡您的業務員";
+  }
+}
+
+main();
+</script>
+
+</body>
+</html>
